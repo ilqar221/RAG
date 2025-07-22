@@ -771,21 +771,37 @@ const MessageBubble = ({ message }) => {
 
 // Enhanced Loading Indicator Component
 const LoadingIndicator = () => (
-  <div className="flex space-x-4">
-    <div className="w-10 h-10 rounded-full bg-gradient-to-r from-green-400 to-blue-500 flex items-center justify-center animate-pulse">
-      <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+  <div className="flex space-x-4 animate-fade-in">
+    <div className="w-12 h-12 rounded-2xl flex items-center justify-center animate-pulse shadow-md" 
+         style={{ background: 'linear-gradient(135deg, var(--emerald-400), var(--emerald-500))' }}>
+      <svg className="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
       </svg>
     </div>
     <div className="flex-1">
-      <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-5">
-        <div className="flex space-x-3 items-center">
-          <div className="flex space-x-1">
-            <div className="w-2 h-2 bg-blue-600 rounded-full animate-bounce"></div>
-            <div className="w-2 h-2 bg-blue-600 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
-            <div className="w-2 h-2 bg-blue-600 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+      <div className="chat-bubble-ai p-6 shadow-sm">
+        <div className="flex space-x-4 items-center">
+          <div className="flex space-x-2">
+            {[0, 1, 2].map((i) => (
+              <div key={i} className="w-3 h-3 rounded-full animate-bounce" 
+                   style={{ 
+                     background: 'var(--emerald-500)',
+                     animationDelay: `${i * 0.15}s`
+                   }}></div>
+            ))}
           </div>
-          <span className="text-gray-500 text-sm font-medium">AI is analyzing your documents...</span>
+          <span className="text-base font-medium" style={{ color: 'var(--text-secondary)' }}>
+            AI is analyzing your documents and generating response...
+          </span>
+        </div>
+        <div className="mt-4 flex items-center space-x-3">
+          <div className="w-8 h-1 rounded-full" style={{ background: 'var(--emerald-200)' }}>
+            <div className="h-1 rounded-full animate-pulse" 
+                 style={{ background: 'var(--emerald-500)', width: '60%' }}></div>
+          </div>
+          <span className="text-xs font-medium" style={{ color: 'var(--text-tertiary)' }}>
+            Processing...
+          </span>
         </div>
       </div>
     </div>
