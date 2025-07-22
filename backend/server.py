@@ -43,7 +43,8 @@ client = AsyncIOMotorClient(mongo_url)
 db = client[os.environ['DB_NAME']]
 
 # Initialize RAG components
-qdrant_client = QdrantClient(host="localhost", port=6333)
+# Use in-memory Qdrant for development (no Docker needed)
+qdrant_client = QdrantClient(":memory:")
 
 # Multi-language embedding model
 embedding_model = SentenceTransformer('sentence-transformers/paraphrase-multilingual-mpnet-base-v2')
