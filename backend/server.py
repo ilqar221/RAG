@@ -254,16 +254,34 @@ class QdrantVectorStore:
         try:
             points = []
             for chunk in chunks:
-                if chunk.embedding:
+                # Handle both DocumentChunk objects and dictionaries
+                if isinstance(chunk, dict):
+                    chunk_id = chunk.get('id')
+                    embedding = chunk.get('embedding')
+                    text = chunk.get('text')
+                    document_id = chunk.get('document_id')
+                    page_number = chunk.get('page_number')
+                    chunk_index = chunk.get('chunk_index')
+                    language = chunk.get('language')
+                else:
+                    chunk_id = chunk.id
+                    embedding = chunk.embedding
+                    text = chunk.text
+                    document_id = chunk.document_id
+                    page_number = chunk.page_number
+                    chunk_index = chunk.chunk_index
+                    language = chunk.language
+                
+                if embedding:
                     points.append({
-                        "id": chunk.id,
-                        "vector": chunk.embedding,
+                        "id": chunk_id,
+                        "vector": embedding,
                         "payload": {
-                            "text": chunk.text,
-                            "document_id": chunk.document_id,
-                            "page_number": chunk.page_number,
-                            "chunk_index": chunk.chunk_index,
-                            "language": chunk.language
+                            "text": text,
+                            "document_id": document_id,
+                            "page_number": page_number,
+                            "chunk_index": chunk_index,
+                            "language": language
                         }
                     })
             
