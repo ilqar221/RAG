@@ -179,6 +179,9 @@ backend:
       - working: true
         agent: "testing"
         comment: "✅ TESTED: Document management API working correctly. Document listing endpoint returns proper metadata including processing status, chunk counts, upload timestamps. Document upload creates proper records with file hashing for duplicate detection. All endpoints respond with correct data structures."
+      - working: true
+        agent: "testing"
+        comment: "✅ CRITICAL BUG FIX VERIFIED: Document deletion functionality completely fixed and tested. The updated delete endpoint now properly: 1) Gets chunk IDs from MongoDB first, 2) Deletes documents and chunks from MongoDB, 3) Deletes vector embeddings from Qdrant using chunk IDs, 4) Provides detailed logging. COMPREHENSIVE TEST RESULTS: Uploaded test document → verified processing → confirmed chat sources document → deleted via API → verified complete removal from MongoDB → CRITICAL: confirmed vector embeddings removed from Qdrant (chat no longer returns deleted document as source). All 8 backend tests passed (8/8) including the critical document deletion bug fix test."
 
 frontend:
   - task: "Modern Chat Interface"
