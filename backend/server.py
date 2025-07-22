@@ -19,7 +19,7 @@ import hashlib
 from qdrant_client import QdrantClient
 from qdrant_client.models import VectorParams, Distance
 from sentence_transformers import SentenceTransformer
-import PyMuPDF as fitz
+import fitz  # PyMuPDF
 from langdetect import detect
 import nltk
 from sklearn.metrics.pairwise import cosine_similarity
