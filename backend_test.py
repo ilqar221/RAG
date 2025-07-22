@@ -15,7 +15,7 @@ from reportlab.lib.pagesizes import letter
 import io
 
 # Backend URL from environment
-BACKEND_URL = "https://d5be9808-7489-45ce-a40d-c3240491857f.preview.emergentagent.com/api"
+BACKEND_URL = "https://a9be135f-dd08-4c26-8513-6540db735944.preview.emergentagent.com/api"
 
 class RAGBackendTester:
     def __init__(self):
