@@ -469,6 +469,7 @@ class RAGBackendTester:
             ("Chat Sessions Listing", self.test_chat_sessions_listing),
             ("RAG Query with Streaming", self.test_chat_query_rag),
             ("Chat Messages Retrieval", self.test_chat_messages),
+            ("🔥 CRITICAL: Document Deletion Bug Fix", self.test_document_deletion_bug_fix),
         ]
         
         passed = 0
