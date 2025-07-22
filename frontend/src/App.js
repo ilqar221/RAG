@@ -14,6 +14,7 @@ function App() {
   const [messages, setMessages] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
+  const [sidebarOpen, setSidebarOpen] = useState(true);
 
   useEffect(() => {
     initializeApp();
@@ -62,7 +63,7 @@ function App() {
   const createNewSession = async () => {
     try {
       const response = await axios.post(`${API}/chat/session`, null, {
-        params: { session_name: `Chat ${chatSessions.length + 1}` }
+        params: { session_name: `Chat ${new Date().toLocaleDateString()}` }
       });
       const newSession = response.data;
       setChatSessions(prev => [newSession, ...prev]);
@@ -70,6 +71,26 @@ function App() {
       setMessages([]);
     } catch (error) {
       console.error('Error creating session:', error);
+    }
+  };
+
+  const deleteSession = async (sessionId) => {
+    try {
+      // If deleting current session, switch to another one
+      if (currentSession?.id === sessionId) {
+        const remainingSessions = chatSessions.filter(s => s.id !== sessionId);
+        if (remainingSessions.length > 0) {
+          setCurrentSession(remainingSessions[0]);
+          await loadMessages(remainingSessions[0].id);
+        } else {
+          setCurrentSession(null);
+          setMessages([]);
+        }
+      }
+      
+      setChatSessions(prev => prev.filter(session => session.id !== sessionId));
+    } catch (error) {
+      console.error('Error deleting session:', error);
     }
   };
 
@@ -188,48 +209,103 @@ function App() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex">
-      {/* Sidebar */}
-      <Sidebar
-        currentView={currentView}
-        setCurrentView={setCurrentView}
-        chatSessions={chatSessions}
-        currentSession={currentSession}
-        setCurrentSession={setCurrentSession}
-        createNewSession={createNewSession}
-        loadMessages={loadMessages}
-        documents={documents}
-        uploadDocument={uploadDocument}
-        deleteDocument={deleteDocument}
-        uploadProgress={uploadProgress}
-      />
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
+      {/* Header */}
+      <header className="bg-white shadow-sm border-b border-gray-200">
+        <div className="px-6 py-4 flex items-center justify-between">
+          <div className="flex items-center space-x-4">
+            <button
+              onClick={() => setSidebarOpen(!sidebarOpen)}
+              className="lg:hidden p-2 rounded-lg hover:bg-gray-100 transition-colors"
+            >
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+              </svg>
+            </button>
+            <div className="flex items-center space-x-3">
+              <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl flex items-center justify-center">
+                <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+              </div>
+              <div>
+                <h1 className="text-xl font-bold text-gray-900">Smart Document Chat</h1>
+                <p className="text-sm text-gray-600">AI-powered document analysis</p>
+              </div>
+            </div>
+          </div>
+          
+          <div className="flex items-center space-x-2 bg-gray-100 rounded-xl p-1">
+            <button
+              onClick={() => setCurrentView('chat')}
+              className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                currentView === 'chat' 
+                  ? 'bg-white text-blue-600 shadow-sm' 
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              💬 Chat
+            </button>
+            <button
+              onClick={() => setCurrentView('documents')}
+              className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                currentView === 'documents' 
+                  ? 'bg-white text-blue-600 shadow-sm' 
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              📚 Library
+            </button>
+          </div>
+        </div>
+      </header>
 
-      {/* Main Content */}
-      <div className="flex-1 flex flex-col">
-        {currentView === 'chat' ? (
-          <ChatInterface
+      <div className="flex h-screen pt-16">
+        {/* Sidebar */}
+        <div className={`transition-all duration-300 ${sidebarOpen ? 'w-80' : 'w-0'} overflow-hidden`}>
+          <Sidebar
+            currentView={currentView}
+            setCurrentView={setCurrentView}
+            chatSessions={chatSessions}
             currentSession={currentSession}
-            messages={messages}
-            sendQuery={sendQuery}
-            isLoading={isLoading}
-          />
-        ) : (
-          <DocumentManager
+            setCurrentSession={setCurrentSession}
+            createNewSession={createNewSession}
+            deleteSession={deleteSession}
+            loadMessages={loadMessages}
             documents={documents}
             uploadDocument={uploadDocument}
             deleteDocument={deleteDocument}
             uploadProgress={uploadProgress}
           />
-        )}
+        </div>
+
+        {/* Main Content */}
+        <div className="flex-1 flex flex-col">
+          {currentView === 'chat' ? (
+            <ChatInterface
+              currentSession={currentSession}
+              messages={messages}
+              sendQuery={sendQuery}
+              isLoading={isLoading}
+            />
+          ) : (
+            <DocumentManager
+              documents={documents}
+              uploadDocument={uploadDocument}
+              deleteDocument={deleteDocument}
+              uploadProgress={uploadProgress}
+            />
+          )}
+        </div>
       </div>
     </div>
   );
 }
 
-// Sidebar Component
+// Enhanced Sidebar Component
 const Sidebar = ({ 
   currentView, setCurrentView, chatSessions, currentSession, 
-  setCurrentSession, createNewSession, loadMessages, documents,
+  setCurrentSession, createNewSession, deleteSession, loadMessages, documents,
   uploadDocument, deleteDocument, uploadProgress 
 }) => {
   const fileInputRef = useRef(null);
@@ -246,77 +322,69 @@ const Sidebar = ({
   };
 
   return (
-    <div className="w-80 bg-white border-r border-gray-200 flex flex-col">
-      <div className="p-4 border-b">
-        <h1 className="text-xl font-bold text-gray-800">RAG System</h1>
-        <p className="text-sm text-gray-600 mt-1">Advanced PDF Chat</p>
-      </div>
-
-      {/* Navigation */}
-      <div className="flex border-b">
-        <button
-          onClick={() => setCurrentView('chat')}
-          className={`flex-1 py-2 px-4 text-sm font-medium ${
-            currentView === 'chat' 
-              ? 'bg-blue-50 text-blue-700 border-b-2 border-blue-700' 
-              : 'text-gray-600 hover:text-gray-900'
-          }`}
-        >
-          Chat
-        </button>
-        <button
-          onClick={() => setCurrentView('documents')}
-          className={`flex-1 py-2 px-4 text-sm font-medium ${
-            currentView === 'documents' 
-              ? 'bg-blue-50 text-blue-700 border-b-2 border-blue-700' 
-              : 'text-gray-600 hover:text-gray-900'
-          }`}
-        >
-          Documents
-        </button>
-      </div>
-
+    <div className="w-full h-full bg-white border-r border-gray-200 flex flex-col">
       {/* Chat Sessions */}
       {currentView === 'chat' && (
         <div className="flex-1 overflow-y-auto">
-          <div className="p-3">
+          <div className="p-4">
             <button
               onClick={createNewSession}
-              className="w-full bg-blue-600 text-white py-2 px-3 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors"
+              className="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white py-3 px-4 rounded-xl font-medium hover:from-blue-700 hover:to-purple-700 transition-all duration-200 shadow-lg hover:shadow-xl flex items-center justify-center space-x-2"
             >
-              + New Chat
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+              </svg>
+              <span>New Conversation</span>
             </button>
           </div>
 
-          <div className="px-3 pb-3">
-            {chatSessions.map((session) => (
-              <div
-                key={session.id}
-                onClick={() => {
-                  setCurrentSession(session);
-                  loadMessages(session.id);
-                }}
-                className={`p-3 rounded-lg cursor-pointer mb-2 transition-colors ${
-                  currentSession?.id === session.id
-                    ? 'bg-blue-50 border border-blue-200'
-                    : 'hover:bg-gray-50'
-                }`}
-              >
-                <div className="font-medium text-gray-900 text-sm truncate">
-                  {session.session_name}
+          <div className="px-4 pb-4">
+            <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">Recent Chats</h3>
+            <div className="space-y-2">
+              {chatSessions.map((session) => (
+                <div
+                  key={session.id}
+                  className={`group relative p-3 rounded-xl cursor-pointer transition-all duration-200 ${
+                    currentSession?.id === session.id
+                      ? 'bg-blue-50 border border-blue-200 shadow-sm'
+                      : 'hover:bg-gray-50 border border-transparent'
+                  }`}
+                >
+                  <div onClick={() => {
+                    setCurrentSession(session);
+                    loadMessages(session.id);
+                  }}>
+                    <div className="font-medium text-gray-900 text-sm truncate pr-8">
+                      {session.session_name}
+                    </div>
+                    <div className="text-xs text-gray-500 mt-1">
+                      {new Date(session.created_at).toLocaleDateString()}
+                    </div>
+                  </div>
+                  
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (window.confirm('Delete this chat session?')) {
+                        deleteSession(session.id);
+                      }
+                    }}
+                    className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 text-gray-400 hover:text-red-500 transition-all"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                  </button>
                 </div>
-                <div className="text-xs text-gray-500 mt-1">
-                  {new Date(session.created_at).toLocaleDateString()}
-                </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
         </div>
       )}
 
-      {/* Document Quick Actions */}
+      {/* Document Upload Section */}
       {currentView === 'documents' && (
-        <div className="p-3">
+        <div className="p-4">
           <input
             type="file"
             accept=".pdf"
@@ -326,35 +394,53 @@ const Sidebar = ({
           />
           <button
             onClick={() => fileInputRef.current?.click()}
-            className="w-full bg-green-600 text-white py-2 px-3 rounded-lg text-sm font-medium hover:bg-green-700 transition-colors"
+            className="w-full bg-gradient-to-r from-green-600 to-teal-600 text-white py-3 px-4 rounded-xl font-medium hover:from-green-700 hover:to-teal-700 transition-all duration-200 shadow-lg hover:shadow-xl flex items-center justify-center space-x-2"
           >
-            📄 Upload PDF
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+            </svg>
+            <span>Upload PDF</span>
           </button>
+          
           {uploadProgress > 0 && (
-            <div className="mt-2">
+            <div className="mt-3">
+              <div className="flex justify-between text-sm text-gray-600 mb-1">
+                <span>Uploading...</span>
+                <span>{uploadProgress}%</span>
+              </div>
               <div className="w-full bg-gray-200 rounded-full h-2">
                 <div
-                  className="bg-green-600 h-2 rounded-full transition-all duration-300"
+                  className="bg-gradient-to-r from-green-600 to-teal-600 h-2 rounded-full transition-all duration-300"
                   style={{ width: `${uploadProgress}%` }}
                 ></div>
               </div>
-              <div className="text-xs text-gray-600 mt-1">{uploadProgress}%</div>
             </div>
           )}
         </div>
       )}
 
-      {/* Document Stats */}
-      <div className="p-3 border-t bg-gray-50">
-        <div className="text-xs text-gray-600">
-          📚 {documents.length} documents
+      {/* Stats Footer */}
+      <div className="p-4 border-t bg-gray-50 text-center">
+        <div className="flex items-center justify-center space-x-4 text-sm text-gray-600">
+          <div className="flex items-center space-x-1">
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+            </svg>
+            <span>{chatSessions.length}</span>
+          </div>
+          <div className="flex items-center space-x-1">
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+            <span>{documents.length}</span>
+          </div>
         </div>
       </div>
     </div>
   );
 };
 
-// Chat Interface Component
+// Enhanced Chat Interface Component
 const ChatInterface = ({ currentSession, messages, sendQuery, isLoading }) => {
   const [inputText, setInputText] = useState('');
   const messagesEndRef = useRef(null);
@@ -374,10 +460,34 @@ const ChatInterface = ({ currentSession, messages, sendQuery, isLoading }) => {
   if (!currentSession) {
     return (
       <div className="flex-1 flex items-center justify-center">
-        <div className="text-center">
-          <div className="text-6xl mb-4">💬</div>
-          <h2 className="text-xl font-semibold text-gray-700 mb-2">No Chat Session</h2>
-          <p className="text-gray-500">Create a new chat session to start asking questions</p>
+        <div className="text-center max-w-md">
+          <div className="w-20 h-20 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center mx-auto mb-6">
+            <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+            </svg>
+          </div>
+          <h2 className="text-2xl font-bold text-gray-800 mb-3">Welcome to Smart Document Chat</h2>
+          <p className="text-gray-600 mb-6">Start a new conversation to ask questions about your uploaded documents</p>
+          <div className="space-y-3 text-sm text-gray-500">
+            <div className="flex items-center justify-center space-x-2">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <span>AI-powered document analysis</span>
+            </div>
+            <div className="flex items-center justify-center space-x-2">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+              <span>Smart source citations</span>
+            </div>
+            <div className="flex items-center justify-center space-x-2">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129" />
+              </svg>
+              <span>Multilingual support</span>
+            </div>
+          </div>
         </div>
       </div>
     );
@@ -385,19 +495,17 @@ const ChatInterface = ({ currentSession, messages, sendQuery, isLoading }) => {
 
   return (
     <div className="flex-1 flex flex-col">
-      {/* Header */}
-      <div className="bg-white border-b px-6 py-4">
-        <h2 className="text-lg font-semibold text-gray-800">{currentSession.session_name}</h2>
-        <p className="text-sm text-gray-600">Ask questions about your uploaded documents</p>
-      </div>
-
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto px-6 py-4 space-y-6">
+      <div className="flex-1 overflow-y-auto px-6 py-6 space-y-6">
         {messages.length === 0 && (
           <div className="text-center mt-10">
-            <div className="text-4xl mb-4">🤖</div>
-            <h3 className="text-lg font-medium text-gray-700 mb-2">Ready to help!</h3>
-            <p className="text-gray-500">Upload some PDF documents and start asking questions</p>
+            <div className="w-16 h-16 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center mx-auto mb-4">
+              <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+              </svg>
+            </div>
+            <h3 className="text-lg font-semibold text-gray-700 mb-2">Ready to help you explore your documents!</h3>
+            <p className="text-gray-500">Ask me anything about the content in your uploaded PDFs</p>
           </div>
         )}
 
@@ -409,23 +517,40 @@ const ChatInterface = ({ currentSession, messages, sendQuery, isLoading }) => {
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Input */}
-      <div className="bg-white border-t px-6 py-4">
-        <form onSubmit={handleSubmit} className="flex space-x-3">
-          <input
-            type="text"
-            value={inputText}
-            onChange={(e) => setInputText(e.target.value)}
-            placeholder="Ask a question about your documents..."
-            className="flex-1 border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            disabled={isLoading}
-          />
+      {/* Enhanced Input */}
+      <div className="border-t bg-white px-6 py-4">
+        <form onSubmit={handleSubmit} className="flex space-x-4">
+          <div className="flex-1 relative">
+            <input
+              type="text"
+              value={inputText}
+              onChange={(e) => setInputText(e.target.value)}
+              placeholder="Ask a question about your documents..."
+              className="w-full border border-gray-300 rounded-xl px-4 py-3 pr-12 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+              disabled={isLoading}
+            />
+            <div className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400">
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+              </svg>
+            </div>
+          </div>
           <button
             type="submit"
             disabled={isLoading || !inputText.trim()}
-            className="bg-blue-600 text-white px-6 py-2 rounded-lg font-medium hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            className="bg-gradient-to-r from-blue-600 to-purple-600 text-white px-6 py-3 rounded-xl font-medium hover:from-blue-700 hover:to-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-lg hover:shadow-xl flex items-center space-x-2"
           >
-            Send
+            {isLoading ? (
+              <svg className="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+            ) : (
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+              </svg>
+            )}
+            <span>{isLoading ? 'Thinking...' : 'Send'}</span>
           </button>
         </form>
       </div>
@@ -433,55 +558,71 @@ const ChatInterface = ({ currentSession, messages, sendQuery, isLoading }) => {
   );
 };
 
-// Message Bubble Component
+// Enhanced Message Bubble Component
 const MessageBubble = ({ message }) => {
   if (message.role === 'user') {
     return (
       <div className="flex justify-end">
-        <div className="max-w-3xl bg-blue-600 text-white rounded-lg px-4 py-2">
-          <div className="text-sm">{message.content}</div>
+        <div className="max-w-3xl bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-2xl px-4 py-3 shadow-lg">
+          <div className="text-sm font-medium">{message.content}</div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="flex space-x-3">
-      <div className="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center">
-        <span className="text-green-600 text-sm">🤖</span>
+    <div className="flex space-x-4">
+      <div className="w-10 h-10 rounded-full bg-gradient-to-r from-green-400 to-blue-500 flex items-center justify-center flex-shrink-0">
+        <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+        </svg>
       </div>
       <div className="flex-1">
-        <div className="bg-white rounded-lg shadow-sm border p-4">
+        <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-5">
           <div className="prose prose-sm max-w-none">
-            <div className="whitespace-pre-wrap">{message.content}</div>
+            <div className="whitespace-pre-wrap text-gray-800 leading-relaxed">{message.content}</div>
           </div>
           
           {message.confidence > 0 && (
-            <div className="mt-3 flex items-center text-sm text-gray-500">
-              <span>Confidence: </span>
-              <div className="ml-2 w-16 h-2 bg-gray-200 rounded-full">
-                <div
-                  className="h-2 bg-green-500 rounded-full"
-                  style={{ width: `${message.confidence * 100}%` }}
-                ></div>
+            <div className="mt-4 flex items-center justify-between">
+              <div className="flex items-center space-x-2 text-sm text-gray-500">
+                <span>Confidence:</span>
+                <div className="w-20 h-2 bg-gray-200 rounded-full overflow-hidden">
+                  <div
+                    className="h-2 bg-gradient-to-r from-green-400 to-green-600 rounded-full transition-all duration-500"
+                    style={{ width: `${message.confidence * 100}%` }}
+                  ></div>
+                </div>
+                <span className="font-medium">{Math.round(message.confidence * 100)}%</span>
               </div>
-              <span className="ml-2">{Math.round(message.confidence * 100)}%</span>
             </div>
           )}
 
           {message.sources && message.sources.length > 0 && (
-            <div className="mt-4 border-t pt-3">
-              <h4 className="text-sm font-medium text-gray-700 mb-2">Sources:</h4>
-              <div className="space-y-2">
+            <div className="mt-4 border-t pt-4">
+              <h4 className="text-sm font-semibold text-gray-700 mb-3 flex items-center">
+                <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+                </svg>
+                Sources
+              </h4>
+              <div className="space-y-3">
                 {message.sources.map((source, index) => (
-                  <div key={index} className="flex items-start space-x-2 p-2 bg-gray-50 rounded text-xs">
-                    <span className="text-blue-600 font-medium">📄</span>
-                    <div className="flex-1">
-                      <div className="text-gray-800">Page {source.page_number}</div>
-                      <div className="text-gray-600 mt-1">{source.text}</div>
-                      <div className="text-gray-500 mt-1">
-                        Similarity: {Math.round(source.similarity_score * 100)}% | Lang: {source.language}
+                  <div key={index} className="flex items-start space-x-3 p-3 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors">
+                    <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                      <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                      </svg>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between mb-1">
+                        <div className="text-sm font-medium text-gray-800">Page {source.page_number}</div>
+                        <div className="flex items-center space-x-2 text-xs text-gray-500">
+                          <span className="bg-blue-100 text-blue-700 px-2 py-1 rounded-full">{Math.round(source.similarity_score * 100)}% match</span>
+                          <span className="bg-gray-200 text-gray-700 px-2 py-1 rounded-full uppercase">{source.language}</span>
+                        </div>
                       </div>
+                      <div className="text-sm text-gray-600 leading-relaxed">{source.text}</div>
                     </div>
                   </div>
                 ))}
@@ -494,26 +635,30 @@ const MessageBubble = ({ message }) => {
   );
 };
 
-// Loading Indicator Component
+// Enhanced Loading Indicator Component
 const LoadingIndicator = () => (
-  <div className="flex space-x-3">
-    <div className="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center">
-      <span className="text-green-600 text-sm">🤖</span>
+  <div className="flex space-x-4">
+    <div className="w-10 h-10 rounded-full bg-gradient-to-r from-green-400 to-blue-500 flex items-center justify-center animate-pulse">
+      <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+      </svg>
     </div>
     <div className="flex-1">
-      <div className="bg-white rounded-lg shadow-sm border p-4">
-        <div className="flex space-x-2 items-center">
-          <div className="w-2 h-2 bg-blue-600 rounded-full animate-bounce"></div>
-          <div className="w-2 h-2 bg-blue-600 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
-          <div className="w-2 h-2 bg-blue-600 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
-          <span className="text-gray-500 text-sm ml-2">Thinking...</span>
+      <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-5">
+        <div className="flex space-x-3 items-center">
+          <div className="flex space-x-1">
+            <div className="w-2 h-2 bg-blue-600 rounded-full animate-bounce"></div>
+            <div className="w-2 h-2 bg-blue-600 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+            <div className="w-2 h-2 bg-blue-600 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+          </div>
+          <span className="text-gray-500 text-sm font-medium">AI is analyzing your documents...</span>
         </div>
       </div>
     </div>
   </div>
 );
 
-// Document Manager Component
+// Enhanced Document Manager Component
 const DocumentManager = ({ documents, uploadDocument, deleteDocument, uploadProgress }) => {
   const fileInputRef = useRef(null);
 
@@ -530,10 +675,10 @@ const DocumentManager = ({ documents, uploadDocument, deleteDocument, uploadProg
 
   const getStatusColor = (status) => {
     switch (status) {
-      case 'completed': return 'bg-green-100 text-green-800';
-      case 'processing': return 'bg-yellow-100 text-yellow-800';
-      case 'failed': return 'bg-red-100 text-red-800';
-      default: return 'bg-gray-100 text-gray-800';
+      case 'completed': return 'bg-green-100 text-green-800 border-green-200';
+      case 'processing': return 'bg-yellow-100 text-yellow-800 border-yellow-200';
+      case 'failed': return 'bg-red-100 text-red-800 border-red-200';
+      default: return 'bg-gray-100 text-gray-800 border-gray-200';
     }
   };
 
@@ -547,97 +692,126 @@ const DocumentManager = ({ documents, uploadDocument, deleteDocument, uploadProg
   };
 
   return (
-    <div className="flex-1 p-6">
-      <div className="mb-6">
-        <h2 className="text-2xl font-bold text-gray-800 mb-2">Document Library</h2>
-        <p className="text-gray-600">Manage your uploaded PDF documents</p>
-      </div>
+    <div className="flex-1 p-8">
+      <div className="max-w-6xl mx-auto">
+        <div className="mb-8">
+          <h2 className="text-3xl font-bold text-gray-800 mb-3">Document Library</h2>
+          <p className="text-gray-600">Upload and manage your PDF documents for AI-powered analysis</p>
+        </div>
 
-      {/* Upload Section */}
-      <div className="bg-white rounded-lg border border-dashed border-gray-300 p-8 mb-6 text-center">
-        <div className="text-4xl mb-4">📚</div>
-        <h3 className="text-lg font-medium text-gray-700 mb-2">Upload PDF Documents</h3>
-        <p className="text-gray-500 mb-4">Support for multilingual documents (English, Azerbaijani)</p>
-        
-        <input
-          type="file"
-          accept=".pdf"
-          onChange={handleFileUpload}
-          ref={fileInputRef}
-          className="hidden"
-        />
-        
-        <button
-          onClick={() => fileInputRef.current?.click()}
-          className="bg-blue-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-blue-700 transition-colors"
-        >
-          Choose PDF File
-        </button>
-        
-        {uploadProgress > 0 && (
-          <div className="mt-4 max-w-xs mx-auto">
-            <div className="w-full bg-gray-200 rounded-full h-2">
-              <div
-                className="bg-blue-600 h-2 rounded-full transition-all duration-300"
-                style={{ width: `${uploadProgress}%` }}
-              ></div>
+        {/* Upload Section */}
+        <div className="bg-gradient-to-r from-blue-50 to-purple-50 border-2 border-dashed border-blue-300 rounded-2xl p-8 mb-8 text-center hover:border-blue-400 transition-colors">
+          <div className="max-w-md mx-auto">
+            <div className="w-16 h-16 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center mx-auto mb-4">
+              <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+              </svg>
             </div>
-            <div className="text-sm text-gray-600 mt-2">Uploading... {uploadProgress}%</div>
+            <h3 className="text-xl font-semibold text-gray-800 mb-2">Upload PDF Documents</h3>
+            <p className="text-gray-600 mb-6">Drag and drop files here, or click to browse</p>
+            
+            <input
+              type="file"
+              accept=".pdf"
+              onChange={handleFileUpload}
+              ref={fileInputRef}
+              className="hidden"
+            />
+            
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              className="bg-gradient-to-r from-blue-600 to-purple-600 text-white px-8 py-3 rounded-xl font-semibold hover:from-blue-700 hover:to-purple-700 transition-all duration-200 shadow-lg hover:shadow-xl"
+            >
+              Choose Files
+            </button>
+            
+            {uploadProgress > 0 && (
+              <div className="mt-6">
+                <div className="flex justify-between text-sm text-gray-700 mb-2">
+                  <span className="font-medium">Uploading and processing...</span>
+                  <span className="font-bold">{uploadProgress}%</span>
+                </div>
+                <div className="w-full bg-white rounded-full h-3 shadow-inner">
+                  <div
+                    className="bg-gradient-to-r from-blue-500 to-purple-600 h-3 rounded-full transition-all duration-300"
+                    style={{ width: `${uploadProgress}%` }}
+                  ></div>
+                </div>
+              </div>
+            )}
           </div>
-        )}
-      </div>
+        </div>
 
-      {/* Documents Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {documents.map((doc) => (
-          <div key={doc.id} className="bg-white rounded-lg border border-gray-200 p-4">
-            <div className="flex items-start justify-between mb-3">
-              <div className="flex items-center space-x-2">
-                <span className="text-2xl">{getStatusIcon(doc.status)}</span>
-                <div>
-                  <h3 className="font-medium text-gray-900 text-sm truncate">{doc.filename}</h3>
-                  <div className={`inline-block px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(doc.status)}`}>
-                    {doc.status}
+        {/* Documents Grid */}
+        {documents.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {documents.map((doc) => (
+              <div key={doc.id} className="bg-white rounded-2xl border border-gray-200 p-6 hover:shadow-lg transition-shadow duration-200">
+                <div className="flex items-start justify-between mb-4">
+                  <div className="flex items-center space-x-3">
+                    <div className="w-12 h-12 bg-gradient-to-r from-blue-100 to-purple-100 rounded-xl flex items-center justify-center">
+                      <span className="text-2xl">{getStatusIcon(doc.status)}</span>
+                    </div>
+                    <div className="flex-1">
+                      <h3 className="font-semibold text-gray-900 text-sm truncate max-w-32">{doc.filename}</h3>
+                      <div className={`inline-block px-3 py-1 rounded-full text-xs font-medium border ${getStatusColor(doc.status)}`}>
+                        {doc.status.charAt(0).toUpperCase() + doc.status.slice(1)}
+                      </div>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => {
+                      if (window.confirm(`Delete "${doc.filename}"?`)) {
+                        deleteDocument(doc.id);
+                      }
+                    }}
+                    className="text-gray-400 hover:text-red-500 transition-colors p-1"
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                  </button>
+                </div>
+
+                <div className="space-y-3">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-600">Pages</span>
+                    <span className="font-medium text-gray-900">{doc.page_count}</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-600">Language</span>
+                    <span className="font-medium text-gray-900 uppercase">{doc.language}</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-600">Chunks</span>
+                    <span className="font-medium text-gray-900">{doc.chunk_count || 0}</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-600">Uploaded</span>
+                    <span className="font-medium text-gray-900">{new Date(doc.uploaded_at).toLocaleDateString()}</span>
                   </div>
                 </div>
               </div>
-              <button
-                onClick={() => deleteDocument(doc.id)}
-                className="text-gray-400 hover:text-red-500 transition-colors"
-              >
-                🗑️
-              </button>
-            </div>
-
-            <div className="space-y-2 text-sm text-gray-600">
-              <div className="flex justify-between">
-                <span>Pages:</span>
-                <span>{doc.page_count}</span>
-              </div>
-              <div className="flex justify-between">
-                <span>Language:</span>
-                <span className="uppercase">{doc.language}</span>
-              </div>
-              <div className="flex justify-between">
-                <span>Chunks:</span>
-                <span>{doc.chunk_count || 0}</span>
-              </div>
-              <div className="flex justify-between">
-                <span>Uploaded:</span>
-                <span>{new Date(doc.uploaded_at).toLocaleDateString()}</span>
-              </div>
-            </div>
+            ))}
           </div>
-        ))}
+        ) : (
+          <div className="text-center py-16">
+            <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-6">
+              <svg className="w-10 h-10 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+            </div>
+            <h3 className="text-xl font-semibold text-gray-700 mb-3">No documents yet</h3>
+            <p className="text-gray-500 mb-6">Upload your first PDF to get started with AI-powered document analysis</p>
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              className="bg-gradient-to-r from-blue-600 to-purple-600 text-white px-6 py-3 rounded-xl font-medium hover:from-blue-700 hover:to-purple-700 transition-all duration-200 shadow-lg hover:shadow-xl"
+            >
+              Upload Your First Document
+            </button>
+          </div>
+        )}
       </div>
-
-      {documents.length === 0 && (
-        <div className="text-center py-12">
-          <div className="text-6xl mb-4">📂</div>
-          <h3 className="text-lg font-medium text-gray-700 mb-2">No documents uploaded</h3>
-          <p className="text-gray-500">Upload your first PDF to get started</p>
-        </div>
-      )}
     </div>
   );
 };
