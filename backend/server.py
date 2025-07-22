@@ -254,6 +254,9 @@ class QdrantVectorStore:
         try:
             points = []
             for chunk in chunks:
+                # Debug: print chunk type
+                logging.info(f"Chunk type: {type(chunk)}")
+                
                 # Handle both DocumentChunk objects and dictionaries
                 if isinstance(chunk, dict):
                     chunk_id = chunk.get('id')
@@ -286,13 +289,17 @@ class QdrantVectorStore:
                     })
             
             if points:
+                logging.info(f"Storing {len(points)} points in Qdrant")
                 qdrant_client.upsert(
                     collection_name=self.collection_name,
                     points=points
                 )
+                logging.info("Successfully stored points in Qdrant")
                 
         except Exception as e:
             logging.error(f"Vector store error: {e}")
+            import traceback
+            logging.error(f"Traceback: {traceback.format_exc()}")
     
     async def search(self, query: str, limit: int = 10) -> List[Dict]:
         """Search for similar chunks"""
