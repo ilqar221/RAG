@@ -842,23 +842,38 @@ const DocumentManager = ({ documents, uploadDocument, deleteDocument, uploadProg
   };
 
   return (
-    <div className="flex-1 p-8">
-      <div className="max-w-6xl mx-auto">
-        <div className="mb-8">
-          <h2 className="text-3xl font-bold text-gray-800 mb-3">Document Library</h2>
-          <p className="text-gray-600">Upload and manage your PDF documents for AI-powered analysis</p>
+    <div className="flex-1 p-8" style={{ background: 'var(--bg-secondary)' }}>
+      <div className="max-w-7xl mx-auto">
+        <div className="mb-10 animate-fade-in">
+          <h2 className="text-4xl font-bold mb-4" style={{ 
+            fontFamily: 'Poppins, sans-serif',
+            color: 'var(--text-primary)'
+          }}>
+            Document Library
+          </h2>
+          <p className="text-xl leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
+            Upload and manage your PDF documents for AI-powered multilingual analysis
+          </p>
         </div>
 
-        {/* Upload Section */}
-        <div className="bg-gradient-to-r from-blue-50 to-purple-50 border-2 border-dashed border-blue-300 rounded-2xl p-8 mb-8 text-center hover:border-blue-400 transition-colors">
-          <div className="max-w-md mx-auto">
-            <div className="w-16 h-16 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center mx-auto mb-4">
-              <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+        {/* Enhanced Upload Section */}
+        <div className="upload-zone rounded-3xl p-12 mb-12 text-center">
+          <div className="max-w-lg mx-auto">
+            <div className="w-24 h-24 rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-lg" 
+                 style={{ background: 'linear-gradient(135deg, var(--emerald-500), var(--emerald-600))' }}>
+              <svg className="w-12 h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
               </svg>
             </div>
-            <h3 className="text-xl font-semibold text-gray-800 mb-2">Upload PDF Documents</h3>
-            <p className="text-gray-600 mb-6">Drag and drop files here, or click to browse</p>
+            <h3 className="text-2xl font-bold mb-3" style={{ 
+              fontFamily: 'Poppins, sans-serif',
+              color: 'var(--text-primary)'
+            }}>
+              Upload PDF Documents
+            </h3>
+            <p className="text-lg mb-8 leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
+              Drag and drop your files here, or click to browse your computer
+            </p>
             
             <input
               type="file"
@@ -870,23 +885,32 @@ const DocumentManager = ({ documents, uploadDocument, deleteDocument, uploadProg
             
             <button
               onClick={() => fileInputRef.current?.click()}
-              className="bg-gradient-to-r from-blue-600 to-purple-600 text-white px-8 py-3 rounded-xl font-semibold hover:from-blue-700 hover:to-purple-700 transition-all duration-200 shadow-lg hover:shadow-xl"
+              className="px-10 py-4 rounded-2xl font-bold text-lg button-hover-lift focus-emerald shadow-lg text-white"
+              style={{ 
+                background: 'linear-gradient(135deg, var(--emerald-500), var(--emerald-600))',
+                fontFamily: 'Poppins, sans-serif'
+              }}
             >
-              Choose Files
+              Choose Files to Upload
             </button>
             
             {uploadProgress > 0 && (
-              <div className="mt-6">
-                <div className="flex justify-between text-sm text-gray-700 mb-2">
-                  <span className="font-medium">Uploading and processing...</span>
-                  <span className="font-bold">{uploadProgress}%</span>
+              <div className="mt-8">
+                <div className="flex justify-between text-base font-semibold mb-3" 
+                     style={{ color: 'var(--text-primary)' }}>
+                  <span>Processing your document...</span>
+                  <span>{uploadProgress}%</span>
                 </div>
-                <div className="w-full bg-white rounded-full h-3 shadow-inner">
+                <div className="w-full rounded-2xl h-4 shadow-inner" 
+                     style={{ background: 'var(--gray-200)' }}>
                   <div
-                    className="bg-gradient-to-r from-blue-500 to-purple-600 h-3 rounded-full transition-all duration-300"
+                    className="progress-bar h-4 rounded-2xl transition-all duration-500"
                     style={{ width: `${uploadProgress}%` }}
                   ></div>
                 </div>
+                <p className="text-sm mt-3 font-medium" style={{ color: 'var(--text-tertiary)' }}>
+                  Extracting text, detecting language, and creating embeddings...
+                </p>
               </div>
             )}
           </div>
@@ -894,68 +918,104 @@ const DocumentManager = ({ documents, uploadDocument, deleteDocument, uploadProg
 
         {/* Documents Grid */}
         {documents.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {documents.map((doc) => (
-              <div key={doc.id} className="bg-white rounded-2xl border border-gray-200 p-6 hover:shadow-lg transition-shadow duration-200">
-                <div className="flex items-start justify-between mb-4">
-                  <div className="flex items-center space-x-3">
-                    <div className="w-12 h-12 bg-gradient-to-r from-blue-100 to-purple-100 rounded-xl flex items-center justify-center">
-                      <span className="text-2xl">{getStatusIcon(doc.status)}</span>
-                    </div>
-                    <div className="flex-1">
-                      <h3 className="font-semibold text-gray-900 text-sm truncate max-w-32">{doc.filename}</h3>
-                      <div className={`inline-block px-3 py-1 rounded-full text-xs font-medium border ${getStatusColor(doc.status)}`}>
-                        {doc.status.charAt(0).toUpperCase() + doc.status.slice(1)}
+          <div>
+            <h3 className="text-2xl font-bold mb-6" style={{ 
+              fontFamily: 'Poppins, sans-serif',
+              color: 'var(--text-primary)'
+            }}>
+              Your Documents ({documents.length})
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+              {documents.map((doc) => (
+                <div key={doc.id} className="card p-6 animate-slide-in">
+                  <div className="flex items-start justify-between mb-6">
+                    <div className="flex items-center space-x-4">
+                      <div className="w-16 h-16 rounded-2xl flex items-center justify-center shadow-sm" 
+                           style={{ background: 'var(--emerald-100)' }}>
+                        <span className="text-3xl">{getStatusIcon(doc.status)}</span>
+                      </div>
+                      <div className="flex-1">
+                        <h4 className="font-bold text-lg mb-2 truncate" 
+                            style={{ 
+                              color: 'var(--text-primary)',
+                              fontFamily: 'Poppins, sans-serif',
+                              maxWidth: '160px'
+                            }}>
+                          {doc.filename}
+                        </h4>
+                        <div className={`inline-flex items-center px-3 py-1.5 rounded-full text-sm font-semibold ${getStatusColor(doc.status)}`}>
+                          {doc.status.charAt(0).toUpperCase() + doc.status.slice(1)}
+                        </div>
                       </div>
                     </div>
+                    <button
+                      onClick={() => {
+                        if (window.confirm(`Are you sure you want to delete "${doc.filename}"? This action cannot be undone.`)) {
+                          deleteDocument(doc.id);
+                        }
+                      }}
+                      className="p-2.5 rounded-xl transition-all duration-200 hover:shadow-md focus-emerald"
+                      style={{ 
+                        background: 'var(--bg-tertiary)',
+                        color: 'var(--text-muted)'
+                      }}
+                    >
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                      </svg>
+                    </button>
                   </div>
-                  <button
-                    onClick={() => {
-                      if (window.confirm(`Delete "${doc.filename}"?`)) {
-                        deleteDocument(doc.id);
-                      }
-                    }}
-                    className="text-gray-400 hover:text-red-500 transition-colors p-1"
-                  >
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                    </svg>
-                  </button>
-                </div>
 
-                <div className="space-y-3">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-gray-600">Pages</span>
-                    <span className="font-medium text-gray-900">{doc.page_count}</span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-gray-600">Language</span>
-                    <span className="font-medium text-gray-900 uppercase">{doc.language}</span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-gray-600">Chunks</span>
-                    <span className="font-medium text-gray-900">{doc.chunk_count || 0}</span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-gray-600">Uploaded</span>
-                    <span className="font-medium text-gray-900">{new Date(doc.uploaded_at).toLocaleDateString()}</span>
+                  <div className="space-y-4">
+                    {[
+                      { label: 'Pages', value: doc.page_count, icon: '📄' },
+                      { label: 'Language', value: doc.language?.toUpperCase() || 'Unknown', icon: '🌍' },
+                      { label: 'Text Chunks', value: doc.chunk_count || 0, icon: '🔤' },
+                      { label: 'Uploaded', value: new Date(doc.uploaded_at).toLocaleDateString(), icon: '📅' }
+                    ].map((item, index) => (
+                      <div key={index} className="flex justify-between items-center py-2 px-3 rounded-xl" 
+                           style={{ background: 'var(--bg-tertiary)' }}>
+                        <div className="flex items-center space-x-3">
+                          <span className="text-lg">{item.icon}</span>
+                          <span className="text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>
+                            {item.label}
+                          </span>
+                        </div>
+                        <span className="font-bold text-sm" style={{ color: 'var(--text-primary)' }}>
+                          {item.value}
+                        </span>
+                      </div>
+                    ))}
                   </div>
                 </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
         ) : (
-          <div className="text-center py-16">
-            <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-6">
-              <svg className="w-10 h-10 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+          <div className="text-center py-20 animate-fade-in">
+            <div className="w-28 h-28 rounded-full flex items-center justify-center mx-auto mb-8 shadow-lg" 
+                 style={{ background: 'var(--gray-100)' }}>
+              <svg className="w-14 h-14" style={{ color: 'var(--text-muted)' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
               </svg>
             </div>
-            <h3 className="text-xl font-semibold text-gray-700 mb-3">No documents yet</h3>
-            <p className="text-gray-500 mb-6">Upload your first PDF to get started with AI-powered document analysis</p>
+            <h3 className="text-3xl font-bold mb-4" style={{ 
+              fontFamily: 'Poppins, sans-serif',
+              color: 'var(--text-primary)'
+            }}>
+              No documents uploaded yet
+            </h3>
+            <p className="text-lg mb-8 max-w-md mx-auto leading-relaxed" 
+               style={{ color: 'var(--text-secondary)' }}>
+              Upload your first PDF to get started with AI-powered multilingual document analysis
+            </p>
             <button
               onClick={() => fileInputRef.current?.click()}
-              className="bg-gradient-to-r from-blue-600 to-purple-600 text-white px-6 py-3 rounded-xl font-medium hover:from-blue-700 hover:to-purple-700 transition-all duration-200 shadow-lg hover:shadow-xl"
+              className="px-8 py-4 rounded-2xl font-bold text-lg button-hover-lift focus-emerald shadow-lg text-white"
+              style={{ 
+                background: 'linear-gradient(135deg, var(--emerald-500), var(--emerald-600))',
+                fontFamily: 'Poppins, sans-serif'
+              }}
             >
               Upload Your First Document
             </button>
