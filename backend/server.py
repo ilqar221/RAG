@@ -533,20 +533,38 @@ async def query_documents(request: QueryRequest):
 @api_router.delete("/documents/{document_id}")
 async def delete_document(document_id: str):
     """Delete a document and its chunks"""
-    # Delete from MongoDB
-    await db.documents.delete_one({"id": document_id})
-    await db.document_chunks.delete_many({"document_id": document_id})
-    
-    # Delete from Qdrant (filter by document_id)
     try:
-        qdrant_client.delete(
-            collection_name="document_chunks",
-            points_selector={"filter": {"must": [{"key": "document_id", "match": {"value": document_id}}]}}
-        )
-    except:
-        pass
-    
-    return {"message": "Document deleted successfully"}
+        # First, get all chunk IDs for this document from MongoDB
+        chunk_docs = await db.document_chunks.find({"document_id": document_id}).to_list(length=None)
+        chunk_ids = [doc["id"] for doc in chunk_docs]
+        
+        # Delete from MongoDB
+        delete_result = await db.documents.delete_one({"id": document_id})
+        chunks_result = await db.document_chunks.delete_many({"document_id": document_id})
+        
+        # Delete from Qdrant using the chunk IDs
+        if chunk_ids:
+            try:
+                qdrant_client.delete(
+                    collection_name="document_chunks",
+                    points_selector=chunk_ids
+                )
+                logging.info(f"Successfully deleted {len(chunk_ids)} vector embeddings from Qdrant for document {document_id}")
+            except Exception as e:
+                logging.error(f"Failed to delete from Qdrant: {e}")
+        
+        logging.info(f"Document deletion completed: document_id={document_id}, mongodb_docs={delete_result.deleted_count}, mongodb_chunks={chunks_result.deleted_count}, qdrant_vectors={len(chunk_ids)}")
+        
+        return {
+            "message": "Document and all associated data deleted successfully",
+            "deleted_document": delete_result.deleted_count > 0,
+            "deleted_chunks": chunks_result.deleted_count,
+            "deleted_vectors": len(chunk_ids)
+        }
+        
+    except Exception as e:
+        logging.error(f"Error deleting document {document_id}: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to delete document: {str(e)}")
 
 # Include the router
 app.include_router(api_router)
