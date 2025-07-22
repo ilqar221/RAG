@@ -17,7 +17,7 @@ import hashlib
 
 # RAG System Imports
 from qdrant_client import QdrantClient
-from qdrant_client.models import VectorParams, Distance
+from qdrant_client.models import VectorParams, Distance, PointStruct
 from sentence_transformers import SentenceTransformer
 import fitz  # PyMuPDF
 from langdetect import detect
