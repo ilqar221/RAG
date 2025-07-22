@@ -300,7 +300,7 @@ class QdrantVectorStore:
             import traceback
             logging.error(f"Traceback: {traceback.format_exc()}")
     
-    async def search(self, query: str, limit: int = 10, similarity_threshold: float = 0.15) -> List[Dict]:
+    async def search(self, query: str, limit: int = 10, similarity_threshold: float = 0.0) -> List[Dict]:
         """Search for similar chunks with similarity threshold filtering"""
         try:
             # Create query embedding
