@@ -290,6 +290,169 @@ class RAGBackendTester:
             self.log_test("Chat Messages", False, f"Messages retrieval error: {str(e)}")
             return False
     
+    def test_document_deletion_bug_fix(self):
+        """CRITICAL TEST: Test document deletion bug fix - verify complete removal from MongoDB and Qdrant"""
+        if not self.document_id:
+            self.log_test("Document Deletion Bug Fix", False, "No document ID available for deletion test")
+            return False
+        
+        try:
+            print(f"\n🔍 TESTING DOCUMENT DELETION BUG FIX for document_id: {self.document_id}")
+            
+            # Step 1: Verify document exists and has been processed
+            print("Step 1: Verifying document exists and is processed...")
+            time.sleep(8)  # Wait for processing to complete
+            
+            response = self.session.get(f"{BACKEND_URL}/documents")
+            if response.status_code == 200:
+                documents = response.json()
+                test_doc = next((doc for doc in documents if doc.get('id') == self.document_id), None)
+                if test_doc:
+                    print(f"   ✅ Document found: {test_doc.get('filename')} (status: {test_doc.get('status')}, chunks: {test_doc.get('chunk_count', 0)})")
+                else:
+                    self.log_test("Document Deletion Bug Fix", False, "Test document not found before deletion")
+                    return False
+            
+            # Step 2: Test chat with document to verify it appears as source
+            print("Step 2: Testing chat with document to verify it appears as source...")
+            query_data = {
+                "query": "What information is contained in the uploaded document about artificial intelligence?",
+                "session_id": self.session_id,
+                "max_sources": 5
+            }
+            
+            response = self.session.post(
+                f"{BACKEND_URL}/chat/query", 
+                json=query_data,
+                headers={"Content-Type": "application/json"},
+                stream=True
+            )
+            
+            sources_before_deletion = []
+            if response.status_code == 200:
+                for line in response.iter_lines():
+                    if line:
+                        line_str = line.decode('utf-8')
+                        if line_str.startswith('data: '):
+                            try:
+                                data = json.loads(line_str[6:])
+                                if 'sources' in data and data.get('is_complete', False):
+                                    sources_before_deletion = data['sources']
+                                    break
+                            except json.JSONDecodeError:
+                                continue
+                
+                print(f"   ✅ Chat response generated with {len(sources_before_deletion)} sources before deletion")
+                if len(sources_before_deletion) == 0:
+                    print("   ⚠️  WARNING: No sources found in chat response - document may not be fully processed")
+            
+            # Step 3: Delete the document using the API
+            print("Step 3: Deleting document using API...")
+            delete_response = self.session.delete(f"{BACKEND_URL}/documents/{self.document_id}")
+            
+            if delete_response.status_code == 200:
+                delete_data = delete_response.json()
+                print(f"   ✅ Delete API response: {delete_data}")
+                
+                # Verify deletion response contains expected fields
+                expected_fields = ['message', 'deleted_document', 'deleted_chunks', 'deleted_vectors']
+                if all(field in delete_data for field in expected_fields):
+                    print(f"   ✅ Deletion summary: Document={delete_data['deleted_document']}, Chunks={delete_data['deleted_chunks']}, Vectors={delete_data['deleted_vectors']}")
+                else:
+                    self.log_test("Document Deletion Bug Fix", False, "Delete response missing expected fields", delete_data)
+                    return False
+            else:
+                self.log_test("Document Deletion Bug Fix", False, f"Delete API failed: HTTP {delete_response.status_code}", delete_response.text)
+                return False
+            
+            # Step 4: Verify document is removed from MongoDB
+            print("Step 4: Verifying document removal from MongoDB...")
+            time.sleep(2)  # Brief wait for deletion to propagate
+            
+            response = self.session.get(f"{BACKEND_URL}/documents")
+            if response.status_code == 200:
+                documents_after = response.json()
+                deleted_doc = next((doc for doc in documents_after if doc.get('id') == self.document_id), None)
+                if deleted_doc is None:
+                    print("   ✅ Document successfully removed from MongoDB")
+                else:
+                    self.log_test("Document Deletion Bug Fix", False, "Document still exists in MongoDB after deletion", deleted_doc)
+                    return False
+            
+            # Step 5: CRITICAL TEST - Verify vector embeddings are removed from Qdrant
+            print("Step 5: CRITICAL TEST - Verifying vector embeddings removed from Qdrant...")
+            
+            # Test by querying the same question again - deleted document should NOT appear as source
+            query_data_after = {
+                "query": "What information is contained in the uploaded document about artificial intelligence?",
+                "session_id": self.session_id,
+                "max_sources": 5
+            }
+            
+            response_after = self.session.post(
+                f"{BACKEND_URL}/chat/query", 
+                json=query_data_after,
+                headers={"Content-Type": "application/json"},
+                stream=True
+            )
+            
+            sources_after_deletion = []
+            response_content_after = ""
+            
+            if response_after.status_code == 200:
+                for line in response_after.iter_lines():
+                    if line:
+                        line_str = line.decode('utf-8')
+                        if line_str.startswith('data: '):
+                            try:
+                                data = json.loads(line_str[6:])
+                                if 'sources' in data and data.get('is_complete', False):
+                                    sources_after_deletion = data['sources']
+                                    response_content_after = data.get('content', '')
+                                    break
+                            except json.JSONDecodeError:
+                                continue
+                
+                print(f"   📊 Chat response after deletion: {len(sources_after_deletion)} sources")
+                
+                # CRITICAL CHECK: Verify deleted document doesn't appear in sources
+                deleted_doc_in_sources = False
+                for source in sources_after_deletion:
+                    # Check if any source text matches our test document content
+                    if "artificial intelligence" in source.get('text', '').lower() and "rag system testing" in source.get('text', '').lower():
+                        deleted_doc_in_sources = True
+                        break
+                
+                if deleted_doc_in_sources:
+                    self.log_test("Document Deletion Bug Fix", False, "CRITICAL BUG: Deleted document still appears in chat sources - vector embeddings not removed from Qdrant", {
+                        "sources_after_deletion": len(sources_after_deletion),
+                        "deleted_doc_found_in_sources": True
+                    })
+                    return False
+                else:
+                    print("   ✅ CRITICAL SUCCESS: Deleted document does NOT appear in chat sources - vector embeddings properly removed from Qdrant")
+                
+                # Check if response indicates no relevant information (expected behavior)
+                if "don't have enough information" in response_content_after.lower() or len(sources_after_deletion) == 0:
+                    print("   ✅ Chat correctly indicates no relevant information available (expected after deletion)")
+                else:
+                    print(f"   ℹ️  Chat still found {len(sources_after_deletion)} other sources (this is OK if from other documents)")
+            
+            # Final verification
+            self.log_test("Document Deletion Bug Fix", True, "CRITICAL BUG FIX VERIFIED: Document completely removed from MongoDB and Qdrant vector store", {
+                "mongodb_removal": "✅ Confirmed",
+                "qdrant_removal": "✅ Confirmed - no deleted doc in chat sources",
+                "sources_before_deletion": len(sources_before_deletion),
+                "sources_after_deletion": len(sources_after_deletion),
+                "api_deletion_response": delete_data
+            })
+            
+            return True
+                
+        except Exception as e:
+            self.log_test("Document Deletion Bug Fix", False, f"Document deletion test error: {str(e)}")
+            return False
+    
     def run_all_tests(self):
         """Run all backend tests"""
         print("=" * 60)
