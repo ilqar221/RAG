@@ -655,67 +655,108 @@ const ChatInterface = ({ currentSession, messages, sendQuery, isLoading }) => {
 const MessageBubble = ({ message }) => {
   if (message.role === 'user') {
     return (
-      <div className="flex justify-end">
-        <div className="max-w-3xl bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-2xl px-4 py-3 shadow-lg">
-          <div className="text-sm font-medium">{message.content}</div>
+      <div className="flex justify-end animate-slide-in">
+        <div className="chat-bubble-user px-6 py-4 shadow-lg">
+          <div className="text-base font-medium leading-relaxed">{message.content}</div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="flex space-x-4">
-      <div className="w-10 h-10 rounded-full bg-gradient-to-r from-green-400 to-blue-500 flex items-center justify-center flex-shrink-0">
-        <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+    <div className="flex space-x-4 animate-slide-in">
+      <div className="w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0 shadow-md" 
+           style={{ background: 'linear-gradient(135deg, var(--emerald-400), var(--emerald-500))' }}>
+        <svg className="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
         </svg>
       </div>
       <div className="flex-1">
-        <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-5">
-          <div className="prose prose-sm max-w-none">
-            <div className="whitespace-pre-wrap text-gray-800 leading-relaxed">{message.content}</div>
+        <div className="chat-bubble-ai p-6 shadow-sm">
+          <div className="prose prose-lg max-w-none">
+            <div className="whitespace-pre-wrap leading-relaxed text-base" 
+                 style={{ color: 'var(--text-primary)', lineHeight: '1.7' }}>
+              {message.content}
+            </div>
           </div>
           
           {message.confidence > 0 && (
-            <div className="mt-4 flex items-center justify-between">
-              <div className="flex items-center space-x-2 text-sm text-gray-500">
-                <span>Confidence:</span>
-                <div className="w-20 h-2 bg-gray-200 rounded-full overflow-hidden">
+            <div className="mt-6 flex items-center justify-between">
+              <div className="flex items-center space-x-3 text-sm">
+                <span className="font-medium" style={{ color: 'var(--text-secondary)' }}>
+                  Confidence:
+                </span>
+                <div className="w-24 h-3 rounded-full overflow-hidden shadow-inner" 
+                     style={{ background: 'var(--gray-200)' }}>
                   <div
-                    className="h-2 bg-gradient-to-r from-green-400 to-green-600 rounded-full transition-all duration-500"
-                    style={{ width: `${message.confidence * 100}%` }}
+                    className="h-3 rounded-full transition-all duration-700"
+                    style={{ 
+                      width: `${message.confidence * 100}%`,
+                      background: `linear-gradient(90deg, 
+                        ${message.confidence > 0.8 ? 'var(--emerald-400)' : 
+                          message.confidence > 0.6 ? '#f59e0b' : '#ef4444'}, 
+                        ${message.confidence > 0.8 ? 'var(--emerald-500)' : 
+                          message.confidence > 0.6 ? '#d97706' : '#dc2626'})`
+                    }}
                   ></div>
                 </div>
-                <span className="font-medium">{Math.round(message.confidence * 100)}%</span>
+                <span className="font-bold text-base" style={{ 
+                  color: message.confidence > 0.8 ? 'var(--emerald-600)' : 
+                         message.confidence > 0.6 ? '#d97706' : '#dc2626'
+                }}>
+                  {Math.round(message.confidence * 100)}%
+                </span>
               </div>
             </div>
           )}
 
           {message.sources && message.sources.length > 0 && (
-            <div className="mt-4 border-t pt-4">
-              <h4 className="text-sm font-semibold text-gray-700 mb-3 flex items-center">
-                <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+            <div className="mt-6 border-t pt-6" style={{ borderColor: 'var(--gray-200)' }}>
+              <h4 className="text-base font-bold mb-4 flex items-center" 
+                  style={{ color: 'var(--text-primary)', fontFamily: 'Poppins, sans-serif' }}>
+                <svg className="w-5 h-5 mr-3" style={{ color: 'var(--emerald-500)' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
                 </svg>
-                Sources
+                Sources ({message.sources.length})
               </h4>
-              <div className="space-y-3">
+              <div className="space-y-4">
                 {message.sources.map((source, index) => (
-                  <div key={index} className="flex items-start space-x-3 p-3 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors">
-                    <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                      <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                      </svg>
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center justify-between mb-1">
-                        <div className="text-sm font-medium text-gray-800">Page {source.page_number}</div>
-                        <div className="flex items-center space-x-2 text-xs text-gray-500">
-                          <span className="bg-blue-100 text-blue-700 px-2 py-1 rounded-full">{Math.round(source.similarity_score * 100)}% match</span>
-                          <span className="bg-gray-200 text-gray-700 px-2 py-1 rounded-full uppercase">{source.language}</span>
+                  <div key={index} className="source-citation p-4 hover:shadow-md">
+                    <div className="flex items-start space-x-4">
+                      <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" 
+                           style={{ background: 'var(--emerald-100)', color: 'var(--emerald-600)' }}>
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between mb-3">
+                          <div className="text-base font-semibold" style={{ color: 'var(--text-primary)' }}>
+                            Page {source.page_number}
+                          </div>
+                          <div className="flex items-center space-x-2 text-xs">
+                            <span className="px-3 py-1.5 rounded-full font-medium border" 
+                                  style={{ 
+                                    background: 'var(--emerald-50)', 
+                                    color: 'var(--emerald-700)',
+                                    borderColor: 'var(--emerald-200)'
+                                  }}>
+                              {Math.round(source.similarity_score * 100)}% match
+                            </span>
+                            <span className="px-3 py-1.5 rounded-full font-medium uppercase border" 
+                                  style={{ 
+                                    background: 'var(--gray-100)', 
+                                    color: 'var(--gray-700)',
+                                    borderColor: 'var(--gray-300)'
+                                  }}>
+                              {source.language}
+                            </span>
+                          </div>
+                        </div>
+                        <div className="text-sm leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
+                          {source.text}
                         </div>
                       </div>
-                      <div className="text-sm text-gray-600 leading-relaxed">{source.text}</div>
                     </div>
                   </div>
                 ))}
