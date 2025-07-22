@@ -370,7 +370,7 @@ If the context doesn't contain enough information, clearly state what's missing.
 Always cite specific sources when making claims.
 For multilingual documents, maintain the language consistency of the user's question.
 Structure your response clearly with relevant details."""
-            ).with_model("gemini", "gemini-2.5-pro-preview-05-06")
+            ).with_model("gemini", "gemini-2.5-flash")
             
             # Create prompt
             prompt = f"""Context from documents:
