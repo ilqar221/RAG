@@ -254,9 +254,6 @@ class QdrantVectorStore:
         try:
             points = []
             for chunk in chunks:
-                # Debug: print chunk type
-                logging.info(f"Chunk type: {type(chunk)}")
-                
                 # Handle both DocumentChunk objects and dictionaries
                 if isinstance(chunk, dict):
                     chunk_id = chunk.get('id')
@@ -276,17 +273,19 @@ class QdrantVectorStore:
                     language = chunk.language
                 
                 if embedding:
-                    points.append({
-                        "id": chunk_id,
-                        "vector": embedding,
-                        "payload": {
+                    # Create proper PointStruct for Qdrant
+                    point = PointStruct(
+                        id=chunk_id,
+                        vector=embedding,
+                        payload={
                             "text": text,
                             "document_id": document_id,
                             "page_number": page_number,
                             "chunk_index": chunk_index,
                             "language": language
                         }
-                    })
+                    )
+                    points.append(point)
             
             if points:
                 logging.info(f"Storing {len(points)} points in Qdrant")
