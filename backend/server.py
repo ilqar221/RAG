@@ -300,8 +300,8 @@ class QdrantVectorStore:
             import traceback
             logging.error(f"Traceback: {traceback.format_exc()}")
     
-    async def search(self, query: str, limit: int = 10) -> List[Dict]:
-        """Search for similar chunks"""
+    async def search(self, query: str, limit: int = 10, similarity_threshold: float = 0.4) -> List[Dict]:
+        """Search for similar chunks with similarity threshold filtering"""
         try:
             # Create query embedding
             query_embedding = embedding_model.encode([query])[0].tolist()
@@ -313,7 +313,8 @@ class QdrantVectorStore:
                 limit=limit
             )
             
-            return [
+            # Filter results by similarity threshold
+            filtered_results = [
                 {
                     "text": result.payload["text"],
                     "document_id": result.payload["document_id"],
@@ -322,7 +323,10 @@ class QdrantVectorStore:
                     "language": result.payload["language"]
                 }
                 for result in results
+                if result.score >= similarity_threshold
             ]
+            
+            return filtered_results
             
         except Exception as e:
             logging.error(f"Vector search error: {e}")
