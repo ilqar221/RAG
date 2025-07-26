@@ -5,6 +5,7 @@ import './App.css';
 // Import Components
 import Header from './components/Header';
 import Sidebar from './components/Sidebar';
+import { ToastProvider, useToast } from './components/ToastProvider';
 
 // Import Pages
 import ChatInterface from './pages/ChatInterface';
@@ -13,8 +14,8 @@ import DocumentManager from './pages/DocumentManager';
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || 'http://localhost:8000';
 const API = `${BACKEND_URL}/api`;
 
-// Main App Component
-function App() {
+// Main App Content Component (to use toast hook)
+function AppContent() {
   const [currentView, setCurrentView] = useState('chat');
   const [chatSessions, setChatSessions] = useState([]);
   const [currentSession, setCurrentSession] = useState(null);
@@ -23,6 +24,9 @@ function App() {
   const [isLoading, setIsLoading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  
+  // Use toast hook
+  const { showSuccess, showError } = useToast();
 
   useEffect(() => {
     initializeApp();
@@ -85,6 +89,9 @@ function App() {
 
   const deleteSession = async (sessionId) => {
     try {
+      // Call backend API to delete session
+      await axios.delete(`${API}/chat/session/${sessionId}`);
+      
       // If deleting current session, switch to another one
       if (currentSession?.id === sessionId) {
         const remainingSessions = chatSessions.filter(s => s.id !== sessionId);
@@ -97,9 +104,16 @@ function App() {
         }
       }
       
+      // Update local state
       setChatSessions(prev => prev.filter(session => session.id !== sessionId));
+      
+      // Show success toast
+      showSuccess('Conversation deleted successfully');
     } catch (error) {
       console.error('Error deleting session:', error);
+      // Show error toast
+      showError('Failed to delete conversation. Please try again.');
+      throw error;
     }
   };
 
@@ -268,6 +282,15 @@ function App() {
         </div>
       </div>
     </div>
+  );
+}
+
+// Main App Component with Toast Provider
+function App() {
+  return (
+    <ToastProvider>
+      <AppContent />
+    </ToastProvider>
   );
 }
 

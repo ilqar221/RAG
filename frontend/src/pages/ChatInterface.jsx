@@ -177,7 +177,7 @@ const ChatInterface = ({ currentSession, messages, sendQuery, isLoading }) => {
           {/* Footer text */}
           <div className="text-center mt-3">
             <p className="text-xs text-gray-500">
-              ChatGPT can make mistakes. Check important info.
+              RaFig can make mistakes. Check important info.
             </p>
           </div>
         </div>

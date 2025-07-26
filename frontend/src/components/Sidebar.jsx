@@ -1,4 +1,5 @@
-import React, { useRef } from 'react';
+import React, { useRef, useState } from 'react';
+import ConfirmationModal from './ConfirmationModal';
 
 const Sidebar = ({ 
   currentView, setCurrentView, chatSessions, currentSession, 
@@ -6,6 +7,7 @@ const Sidebar = ({
   uploadDocument, deleteDocument, uploadProgress 
 }) => {
   const fileInputRef = useRef(null);
+  const [deleteModal, setDeleteModal] = useState({ isOpen: false, sessionId: null, sessionName: '' });
 
   const handleFileUpload = async (event) => {
     const files = Array.from(event.target.files);
@@ -88,9 +90,11 @@ const Sidebar = ({
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
-                        if (window.confirm('Delete this conversation?')) {
-                          deleteSession(session.id);
-                        }
+                        setDeleteModal({
+                          isOpen: true,
+                          sessionId: session.id,
+                          sessionName: session.session_name || `Chat ${new Date(session.created_at).toLocaleDateString()}`
+                        });
                       }}
                       className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 p-1 rounded-md hover:bg-gray-200 transition-all duration-200"
                     >
@@ -342,6 +346,27 @@ const Sidebar = ({
           <span>{documents.length} documents</span>
         </div>
       </div>
+
+      {/* Delete Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={deleteModal.isOpen}
+        onClose={() => setDeleteModal({ isOpen: false, sessionId: null, sessionName: '' })}
+        onConfirm={async () => {
+          try {
+            await deleteSession(deleteModal.sessionId);
+            setDeleteModal({ isOpen: false, sessionId: null, sessionName: '' });
+          } catch (error) {
+            console.error('Delete failed:', error);
+            // Error toast will be shown by deleteSession function
+            setDeleteModal({ isOpen: false, sessionId: null, sessionName: '' });
+          }
+        }}
+        title="Delete Conversation"
+        message={`Are you sure you want to delete "${deleteModal.sessionName}"? This action cannot be undone.`}
+        confirmText="Delete"
+        cancelText="Cancel"
+        isDangerous={true}
+      />
     </div>
   );
 };

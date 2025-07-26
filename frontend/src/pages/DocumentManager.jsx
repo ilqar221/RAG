@@ -33,12 +33,6 @@ const DocumentManager = ({ documents, uploadDocument, deleteDocument, uploadProg
   return (
     <div className="flex-1 flex flex-col" style={{ background: '#f8fafc', height: 'calc(100vh - 64px)' }}>
       {/* Header */}
-      <div className="px-4 sm:px-8 py-6 bg-white border-b border-gray-200">
-        <h1 className="text-2xl sm:text-3xl font-bold mb-2 text-gray-900">Document Library</h1>
-        <p className="text-sm sm:text-base text-gray-600">
-          Upload and manage your PDF documents for AI-powered multilingual analysis
-        </p>
-      </div>
 
       {/* Main Content Area - Split Layout */}
       <div className="flex-1 flex flex-col lg:flex-row gap-6 p-4 sm:p-6 lg:p-8">

@@ -485,6 +485,26 @@ async def get_chat_sessions():
     sessions = await db.chat_sessions.find().sort("updated_at", -1).to_list(100)
     return [ChatSession(**session) for session in sessions]
 
+@api_router.delete("/chat/session/{session_id}")
+async def delete_chat_session(session_id: str):
+    """Delete a chat session and all its messages"""
+    try:
+        # Delete all messages associated with the session
+        await db.chat_messages.delete_many({"session_id": session_id})
+        
+        # Delete the session (using 'id' field, not 'session_id')
+        result = await db.chat_sessions.delete_one({"id": session_id})
+        
+        if result.deleted_count == 0:
+            raise HTTPException(status_code=404, detail="Session not found")
+        
+        return {"message": "Session deleted successfully", "session_id": session_id}
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error deleting session: {str(e)}")
+
 @api_router.get("/chat/{session_id}/messages")
 async def get_chat_messages(session_id: str):
     """Get messages for a chat session"""
